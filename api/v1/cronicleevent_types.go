@@ -17,25 +17,69 @@ limitations under the License.
 package v1
 
 import (
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // CronicleEventSpec defines the desired state of CronicleEvent
 type CronicleEventSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// +kubebuilder:default=0
+	CatchUp int `json:"catchUp,omitempty"`
 
-	// Foo is an example field of CronicleEvent. Edit cronicleevent_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// +kubebuilder:validation:Required
+	Category string `json:"category,omitempty"`
+
+	CpuLimit   int `json:"cpuLimit,omitempty"`
+	CpuSustain int `json:"cpuSustain,omitempty"`
+	Detached   int `json:"detached,omitempty"`
+
+	// +kubebuilder:default=1
+	// +kubebuilder:validation:Required
+	Enabled int `json:"enabled,omitempty"`
+
+	LogMaxSize    int    `json:"logMaxSize,omitempty"`
+	MaxChildren   int    `json:"maxChildren,omitempty"`
+	MemoryLimit   int    `json:"memoryLimit,omitempty"`
+	MemorySustain int    `json:"memorySustain,omitempty"`
+	Multiplex     int    `json:"multiplex,omitempty"`
+	Notes         string `json:"notes,omitempty"`
+	NotifyFail    string `json:"notifyFail,omitempty"`
+	NotifySuccess string `json:"notifySuccess,omitempty"`
+
+	// +kubebuilder:validation:Required
+	Params v1.JSON `json:"params,omitempty"`
+
+	// +kubebuilder:validation:Required
+	// +kubebuilder:default="shellplug"
+	Plugin string `json:"plugin,omitempty"`
+
+	Retries    int `json:"retries,omitempty"`
+	RetryDelay int `json:"retryDelay,omitempty"`
+
+	// +kubebuilder:validation:Required
+	Target string `json:"target,omitempty"`
+
+	Timeout int `json:"timeout,omitempty"`
+
+	// +kubebuilder:validation:Required
+	Timezone string `json:"timezone,omitempty"`
+
+	// +kubebuilder:validation:Required
+	Timing v1.JSON `json:"timing,omitempty"`
+
+	// +kubebuilder:validation:Required
+	Title string `json:"title,omitempty"`
+
+	Webhook          string                `json:"webhook,omitempty"`
+	InstanceSelector *metav1.LabelSelector `json:"instanceSelector,omitempty"`
 }
 
 // CronicleEventStatus defines the observed state of CronicleEvent
 type CronicleEventStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	EventId  string `json:"eventId,omitempty"`
+	Modified int64  `json:"modified,omitempty"`
+
+	EventStatus string `json:"eventStatus,omitempty"`
 }
 
 // +kubebuilder:object:root=true

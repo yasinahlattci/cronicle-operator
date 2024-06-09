@@ -19,10 +19,13 @@ package controller
 import (
 	"context"
 
+	cronicleApiClient "github.com/yasinahlattci/cronicle-go-client/api"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"time"
 
 	croniclenetv1 "github.com/yasinahlattci/cronicle-operator/api/v1"
 )
@@ -47,11 +50,71 @@ type CronicleEventReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.18.2/pkg/reconcile
 func (r *CronicleEventReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	l := log.FromContext(ctx)
+	l.Info("Reconciling CronicleEvent", "req", req)
 
-	// TODO(user): your logic here
+	cronicleEvent := &croniclenetv1.CronicleEvent{}
+	r.Get(ctx, types.NamespacedName{Name: req.Name, Namespace: req.Namespace}, cronicleEvent)
 
-	return ctrl.Result{}, nil
+	eventStatus := cronicleEvent.Status.EventStatus
+	eventId := cronicleEvent.Status.EventId
+	if eventStatus != "" && eventId != "" {
+		l.Info("Event already created", "eventStatus", eventStatus)
+		return ctrl.Result{}, nil
+	} else {
+		cronicleClient := cronicleApiClient.NewClient(cronicleApiClient.Config{
+			BaseUrl:       "http://localhost:3012",
+			APIKey:        "b488c195302bae22908c1b89e94b9c14",
+			Timeout:       10 * time.Second,
+			RetryAttempts: 2,
+		})
+		createEventData := cronicleApiClient.CreateEventRequest{
+			CatchUp:       1,
+			Category:      "general",
+			CpuLimit:      100,
+			CpuSustain:    0,
+			Detached:      0,
+			Enabled:       cronicleEvent.Spec.Enabled,
+			LogMaxSize:    0,
+			MaxChildren:   1,
+			MemoryLimit:   0,
+			MemorySustain: 0,
+			Multiplex:     0,
+			Notes:         "Hello from operator",
+			NotifyFail:    "",
+			NotifySuccess: "",
+			Params: map[string]interface{}{
+				"db_host":          "idb01.mycompany.com",
+				"verbose":          1,
+				"cust":             "Sales",
+				"additional_param": "value",
+			},
+			Plugin:     "test",
+			Retries:    0,
+			RetryDelay: 30,
+			Target:     "db1.int.myserver.com",
+			Timeout:    3600,
+			Timezone:   "America/New_York",
+			Timing: map[string]interface{}{
+				"days":    []int{1, 2, 3, 4, 5}, // Monday to Friday
+				"hours":   []int{21},
+				"minutes": []int{20, 40},
+			},
+			Title:   "Hello from operator Test",
+			WebHook: "http://myserver.com/notify-chronos.php",
+		}
+		resp, err := cronicleClient.CreateEvent(createEventData)
+		if err != nil {
+			l.Error(err, "Failed to create event")
+			return ctrl.Result{}, err
+		}
+		l.Info("Event created", "resp", resp)
+		cronicleEvent.Status.EventId = resp.ID
+		cronicleEvent.Status.EventStatus = "ready"
+		r.Status().Update(ctx, cronicleEvent)
+		return ctrl.Result{}, nil
+
+	}
 }
 
 // SetupWithManager sets up the controller with the Manager.

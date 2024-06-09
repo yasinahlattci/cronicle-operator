@@ -6,4 +6,9 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
   name: cronicleevent-sample
 spec:
-  # TODO(user): Add fields here
+  enabled: 1
+  category: "general"
+  title: "Test go operator"
+  params:
+    script: "echo 'Hello, World!'"
+
