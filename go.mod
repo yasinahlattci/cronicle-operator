@@ -5,7 +5,7 @@ go 1.22.0
 require (
 	github.com/onsi/ginkgo/v2 v2.17.1
 	github.com/onsi/gomega v1.32.0
-	github.com/yasinahlattci/cronicle-go-client v0.0.0-20240608173830-582e0ee392f0
+	github.com/yasinahlattci/cronicle-go-client v0.0.0-20240611111536-96c2a1d26ade
 	k8s.io/apiextensions-apiserver v0.30.0
 	k8s.io/apimachinery v0.30.0
 	k8s.io/client-go v0.30.0
