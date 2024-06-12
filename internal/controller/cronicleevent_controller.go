@@ -91,7 +91,6 @@ func (r *CronicleEventReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	err := r.Get(ctx, types.NamespacedName{Name: req.Name, Namespace: req.Namespace}, cronicleEvent)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			l.Info("CronicleEvent resource not found.")
 			return ctrl.Result{}, nil
 		}
 		return ctrl.Result{}, err
@@ -109,7 +108,7 @@ func (r *CronicleEventReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	// Check if the event is being deleted
 	if cronicleEvent.GetDeletionTimestamp() != nil {
-		if controllerutil.ContainsFinalizer(cronicleEvent, "eventfinalizer.cronicle.net") {
+		if controllerutil.ContainsFinalizer(cronicleEvent, "cronicle.net/eventfinalizer") {
 			// Run finalization logic for event
 			cronicleClient := cronicleApiClient.NewClient(cronicleApiClient.Config{
 				BaseUrl:       "http://localhost:3012",
@@ -129,7 +128,7 @@ func (r *CronicleEventReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 					return ctrl.Result{RequeueAfter: 60 * time.Second}, nil
 				}
 				cronicleClient.DeleteEvent(cronicleEvent.Status.EventId)
-				controllerutil.RemoveFinalizer(cronicleEvent, "eventfinalizer.cronicle.net")
+				controllerutil.RemoveFinalizer(cronicleEvent, "cronicle.net/eventfinalizer")
 				err = r.Update(ctx, cronicleEvent)
 				if err != nil {
 					l.Error(err, "Failed to remove finalizer")
@@ -137,20 +136,24 @@ func (r *CronicleEventReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 				}
 
 			}
-			resp, err := cronicleClient.DisableEvent(cronicleEvent.Status.EventId)
-			if err != nil {
-				l.Error(err, "Failed to disable event")
-				return ctrl.Result{}, err
+			if !cronicleEvent.Status.DisabledForDeletion {
+
+				resp, err := cronicleClient.DisableEvent(cronicleEvent.Status.EventId)
+				if err != nil {
+					l.Error(err, "Failed to disable event")
+					return ctrl.Result{}, err
+				}
+				l.Info("Event disabled", "resp", resp)
+				cronicleEvent.Status.EventStatus = "pendingDeletion"
+				cronicleEvent.Status.DisabledForDeletion = true
+				err = r.Status().Update(ctx, cronicleEvent)
+				return ctrl.Result{}, nil
 			}
-			l.Info("Event disabled", "resp", resp)
-			cronicleEvent.Status.EventStatus = "pendingDeletion"
-			err = r.Status().Update(ctx, cronicleEvent)
-			return ctrl.Result{}, nil
 		}
 	}
 
-	if !controllerutil.ContainsFinalizer(cronicleEvent, "eventfinalizer.cronicle.net") {
-		controllerutil.AddFinalizer(cronicleEvent, "eventfinalizer.cronicle.net")
+	if !controllerutil.ContainsFinalizer(cronicleEvent, "cronicle.net/eventfinalizer") {
+		controllerutil.AddFinalizer(cronicleEvent, "cronicle.net/eventfinalizer")
 		if err := r.Update(ctx, cronicleEvent); err != nil {
 			return ctrl.Result{}, err
 		}
@@ -161,8 +164,7 @@ func (r *CronicleEventReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	modified := time.Now().Unix()
 
 	if eventStatus == "ready" && eventId != "" {
-		l.Info("Event exists, updating", "eventStatus", eventStatus)
-		l.Info("Event exists, doing nothing", "eventStatus", eventStatus)
+		l.Info("TODO", "eventStatus", eventStatus)
 		return ctrl.Result{}, nil
 	} else {
 		cronicleClient := cronicleApiClient.NewClient(cronicleApiClient.Config{
