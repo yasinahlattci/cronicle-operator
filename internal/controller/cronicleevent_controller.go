@@ -117,28 +117,34 @@ func (r *CronicleEventReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 				Timeout:       10 * time.Second,
 				RetryAttempts: 2,
 			})
+
+			if cronicleEvent.Status.EventStatus == "pendingDeletion" {
+				resp, err := cronicleClient.CheckRunningJobs(cronicleEvent.Status.EventId)
+				if err != nil {
+					l.Error(err, "Failed to check running jobs")
+					return ctrl.Result{}, err
+				}
+				if resp {
+					l.Info("Event has running jobs, doing nothing")
+					return ctrl.Result{RequeueAfter: 60 * time.Second}, nil
+				}
+				cronicleClient.DeleteEvent(cronicleEvent.Status.EventId)
+				controllerutil.RemoveFinalizer(cronicleEvent, "eventfinalizer.cronicle.net")
+				err = r.Update(ctx, cronicleEvent)
+				if err != nil {
+					l.Error(err, "Failed to remove finalizer")
+					return ctrl.Result{}, err
+				}
+
+			}
 			resp, err := cronicleClient.DisableEvent(cronicleEvent.Status.EventId)
 			if err != nil {
 				l.Error(err, "Failed to disable event")
 				return ctrl.Result{}, err
 			}
 			l.Info("Event disabled", "resp", resp)
-			resp, err := cronicleClient.CheckRunningJobs(cronicleEvent.Status.EventId)
-			if err != nil {
-				l.Error(err, "Failed to check running jobs")
-				return ctrl.Result{}, err
-			}
-			if resp == true {
-				l.Info("Event has running jobs, doing nothing")
-				return ctrl.Result{}, nil
-			}
-			cronicleClient.DeleteEvent(cronicleEvent.Status.EventId)
-			controllerutil.RemoveFinalizer(cronicleEvent, "eventfinalizer.cronicle.net")
-			err = r.Update(ctx, cronicleEvent)
-			if err != nil {
-				l.Error(err, "Failed to remove finalizer")
-				return ctrl.Result{}, err
-			}
+			cronicleEvent.Status.EventStatus = "pendingDeletion"
+			err = r.Status().Update(ctx, cronicleEvent)
 			return ctrl.Result{}, nil
 		}
 	}
