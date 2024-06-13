@@ -96,6 +96,13 @@ func (r *CronicleEventReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, err
 	}
 
+	cronicleClient := cronicleApiClient.NewClient(cronicleApiClient.Config{
+		BaseUrl:       "http://localhost:3012",
+		APIKey:        "b488c195302bae22908c1b89e94b9c14",
+		Timeout:       10 * time.Second,
+		RetryAttempts: 2,
+	})
+
 	//labelSelector := cronicleEvent.Spec.InstanceSelector
 
 	//service, err := r.getFirstMatchingService(ctx, req.Namespace, labelSelector)
@@ -109,15 +116,7 @@ func (r *CronicleEventReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	// Check if the event is being deleted
 	if cronicleEvent.GetDeletionTimestamp() != nil {
 		if controllerutil.ContainsFinalizer(cronicleEvent, "cronicle.net/eventfinalizer") {
-			// Run finalization logic for event
-			cronicleClient := cronicleApiClient.NewClient(cronicleApiClient.Config{
-				BaseUrl:       "http://localhost:3012",
-				APIKey:        "b488c195302bae22908c1b89e94b9c14",
-				Timeout:       10 * time.Second,
-				RetryAttempts: 2,
-			})
-
-			if cronicleEvent.Status.EventStatus == "pendingDeletion" {
+			if cronicleEvent.Status.EventStatus == "readyForDeletion" {
 				resp, err := cronicleClient.CheckRunningJobs(cronicleEvent.Status.EventId)
 				if err != nil {
 					l.Error(err, "Failed to check running jobs")
@@ -136,7 +135,7 @@ func (r *CronicleEventReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 				}
 
 			}
-			if !cronicleEvent.Status.DisabledForDeletion {
+			if cronicleEvent.Status.EventStatus != "markedForDeletion" {
 
 				resp, err := cronicleClient.DisableEvent(cronicleEvent.Status.EventId)
 				if err != nil {
@@ -144,8 +143,7 @@ func (r *CronicleEventReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 					return ctrl.Result{}, err
 				}
 				l.Info("Event disabled", "resp", resp)
-				cronicleEvent.Status.EventStatus = "pendingDeletion"
-				cronicleEvent.Status.DisabledForDeletion = true
+				cronicleEvent.Status.EventStatus = "markedForDeletion"
 				err = r.Status().Update(ctx, cronicleEvent)
 				return ctrl.Result{}, nil
 			}
@@ -154,32 +152,27 @@ func (r *CronicleEventReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	if !controllerutil.ContainsFinalizer(cronicleEvent, "cronicle.net/eventfinalizer") {
 		controllerutil.AddFinalizer(cronicleEvent, "cronicle.net/eventfinalizer")
-		if err := r.Update(ctx, cronicleEvent); err != nil {
-			return ctrl.Result{}, err
-		}
+		r.Update(ctx, cronicleEvent)
 	}
-	// Status
+
 	eventStatus := cronicleEvent.Status.EventStatus
 	eventId := cronicleEvent.Status.EventId
 	modified := time.Now().Unix()
 
+	cronicleEvent.Status.EventStatus = "ready"
+	cronicleEvent.Status.Modified = modified
+
 	if eventStatus == "ready" && eventId != "" {
-		l.Info("TODO", "eventStatus", eventStatus)
-		return ctrl.Result{}, nil
-	} else {
-		cronicleClient := cronicleApiClient.NewClient(cronicleApiClient.Config{
-			BaseUrl:       "http://localhost:3012",
-			APIKey:        "b488c195302bae22908c1b89e94b9c14",
-			Timeout:       10 * time.Second,
-			RetryAttempts: 2,
-		})
-		createEventData := cronicleApiClient.CreateEventRequest{
+		l.Info("Event is ready", "eventId", eventId)
+
+		updateEventData := cronicleApiClient.UpdateEventRequest{
+			Id:            cronicleEvent.Status.EventId,
 			CatchUp:       1,
 			Category:      "general",
 			CpuLimit:      100,
 			CpuSustain:    0,
 			Detached:      0,
-			Enabled:       1,
+			Enabled:       cronicleEvent.Spec.Enabled,
 			LogMaxSize:    0,
 			MaxChildren:   1,
 			MemoryLimit:   0,
@@ -189,39 +182,77 @@ func (r *CronicleEventReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			NotifyFail:    "",
 			NotifySuccess: "",
 			Params: map[string]interface{}{
-				"db_host":          "idb01.mycompany.com",
-				"verbose":          1,
-				"cust":             "Sales",
-				"additional_param": "value",
+				"script":   "#!/bin/sh\n\nsleep 100",
+				"annotate": 1,
+				"json":     0,
 			},
-			Plugin:     "test",
+			Plugin:     "shellplug",
 			Retries:    0,
 			RetryDelay: 30,
-			Target:     "db1.int.myserver.com",
+			Target:     "6712b650ec8b",
 			Timeout:    3600,
-			Timezone:   "America/New_York",
+			Timezone:   "Europe/Istanbul",
 			Timing: map[string]interface{}{
 				"days":    []int{1, 2, 3, 4, 5}, // Monday to Friday
 				"hours":   []int{21},
 				"minutes": []int{20, 40},
 			},
-			Title:   "Go Client Test",
-			WebHook: "http://myserver.com/notify-chronos.php",
+			Title:   "Go Operator Test Cron",
+			WebHook: "",
 		}
-
-		resp, err := cronicleClient.CreateEvent(createEventData)
+		// It means event is already created, only update can be done, since delete is handled above
+		resp, err := cronicleClient.UpdateEvent(updateEventData)
 		if err != nil {
-			l.Error(err, "Failed to create event")
+			l.Error(err, "Failed to update event")
 			return ctrl.Result{}, err
 		}
-		l.Info("Event created", "resp", resp)
-		cronicleEvent.Status.EventId = resp.ID
-		cronicleEvent.Status.EventStatus = "ready"
-		cronicleEvent.Status.Modified = modified
+		l.Info("Event updated", "resp", resp)
 		r.Status().Update(ctx, cronicleEvent)
 		return ctrl.Result{}, nil
-
 	}
+	createEventData := cronicleApiClient.CreateEventRequest{
+		CatchUp:       1,
+		Category:      "general",
+		CpuLimit:      100,
+		CpuSustain:    0,
+		Detached:      0,
+		Enabled:       cronicleEvent.Spec.Enabled,
+		LogMaxSize:    0,
+		MaxChildren:   1,
+		MemoryLimit:   0,
+		MemorySustain: 0,
+		Multiplex:     0,
+		Notes:         "Hello from go client",
+		NotifyFail:    "",
+		NotifySuccess: "",
+		Params: map[string]interface{}{
+			"script":   "#!/bin/sh\n\nsleep 100",
+			"annotate": 1,
+			"json":     0,
+		},
+		Plugin:     "shellplug",
+		Retries:    0,
+		RetryDelay: 30,
+		Target:     "6712b650ec8b",
+		Timeout:    3600,
+		Timezone:   "Europe/Istanbul",
+		Timing: map[string]interface{}{
+			"days":    []int{1, 2, 3, 4, 5}, // Monday to Friday
+			"hours":   []int{21},
+			"minutes": []int{20, 40},
+		},
+		Title:   "Go Operator Test Cron",
+		WebHook: "",
+	}
+	resp, err := cronicleClient.CreateEvent(createEventData)
+	cronicleEvent.Status.EventId = resp.ID
+	if err != nil {
+		l.Error(err, "Failed to create event")
+		return ctrl.Result{}, err
+	}
+	l.Info("Event created", "resp", resp)
+	r.Status().Update(ctx, cronicleEvent)
+	return ctrl.Result{}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.

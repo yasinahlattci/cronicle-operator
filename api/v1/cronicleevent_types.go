@@ -76,10 +76,9 @@ type CronicleEventSpec struct {
 
 // CronicleEventStatus defines the observed state of CronicleEvent
 type CronicleEventStatus struct {
-	EventId             string `json:"eventId,omitempty"`
-	Modified            int64  `json:"modified,omitempty"`
-	EventStatus         string `json:"eventStatus,omitempty"`
-	DisabledForDeletion bool   `json:"readyForDeletion,omitempty"`
+	EventId     string `json:"eventId,omitempty"`
+	Modified    int64  `json:"modified,omitempty"`
+	EventStatus string `json:"eventStatus,omitempty"`
 }
 
 // +kubebuilder:object:root=true

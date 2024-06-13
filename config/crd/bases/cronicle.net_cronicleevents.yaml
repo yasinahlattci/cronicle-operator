@@ -150,8 +150,6 @@ spec:
               modified:
                 format: int64
                 type: integer
-              readyForDeletion:
-                type: boolean
             type: object
         type: object
     served: true
