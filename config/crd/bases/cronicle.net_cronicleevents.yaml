@@ -113,10 +113,13 @@ spec:
               multiplex:
                 type: integer
               notes:
+                default: ""
                 type: string
               notifyFail:
+                default: ""
                 type: string
               notifySuccess:
+                default: ""
                 type: string
               params:
                 x-kubernetes-preserve-unknown-fields: true
@@ -124,21 +127,34 @@ spec:
                 default: shellplug
                 type: string
               retries:
+                default: 0
                 type: integer
               retryDelay:
+                default: 30
                 type: integer
               target:
                 type: string
               timeout:
+                default: 36000
                 type: integer
               timezone:
+                default: Europe/Istanbul
                 type: string
               timing:
                 x-kubernetes-preserve-unknown-fields: true
               title:
                 type: string
               webhook:
+                default: ""
                 type: string
+            required:
+            - category
+            - enabled
+            - params
+            - plugin
+            - target
+            - timezone
+            - title
             type: object
           status:
             description: CronicleEventStatus defines the observed state of CronicleEvent
@@ -147,6 +163,126 @@ spec:
                 type: string
               eventStatus:
                 type: string
+              lastHandledSpec:
+                description: CronicleEventSpec defines the desired state of CronicleEvent
+                properties:
+                  catchUp:
+                    default: 0
+                    type: integer
+                  category:
+                    type: string
+                  cpuLimit:
+                    type: integer
+                  cpuSustain:
+                    type: integer
+                  detached:
+                    type: integer
+                  enabled:
+                    default: 1
+                    type: integer
+                  instanceSelector:
+                    description: |-
+                      A label selector is a label query over a set of resources. The result of matchLabels and
+                      matchExpressions are ANDed. An empty label selector matches all objects. A null
+                      label selector matches no objects.
+                    properties:
+                      matchExpressions:
+                        description: matchExpressions is a list of label selector
+                          requirements. The requirements are ANDed.
+                        items:
+                          description: |-
+                            A label selector requirement is a selector that contains values, a key, and an operator that
+                            relates the key and values.
+                          properties:
+                            key:
+                              description: key is the label key that the selector
+                                applies to.
+                              type: string
+                            operator:
+                              description: |-
+                                operator represents a key's relationship to a set of values.
+                                Valid operators are In, NotIn, Exists and DoesNotExist.
+                              type: string
+                            values:
+                              description: |-
+                                values is an array of string values. If the operator is In or NotIn,
+                                the values array must be non-empty. If the operator is Exists or DoesNotExist,
+                                the values array must be empty. This array is replaced during a strategic
+                                merge patch.
+                              items:
+                                type: string
+                              type: array
+                              x-kubernetes-list-type: atomic
+                          required:
+                          - key
+                          - operator
+                          type: object
+                        type: array
+                        x-kubernetes-list-type: atomic
+                      matchLabels:
+                        additionalProperties:
+                          type: string
+                        description: |-
+                          matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+                          map is equivalent to an element of matchExpressions, whose key field is "key", the
+                          operator is "In", and the values array contains only "value". The requirements are ANDed.
+                        type: object
+                    type: object
+                    x-kubernetes-map-type: atomic
+                  logMaxSize:
+                    type: integer
+                  maxChildren:
+                    type: integer
+                  memoryLimit:
+                    type: integer
+                  memorySustain:
+                    type: integer
+                  multiplex:
+                    type: integer
+                  notes:
+                    default: ""
+                    type: string
+                  notifyFail:
+                    default: ""
+                    type: string
+                  notifySuccess:
+                    default: ""
+                    type: string
+                  params:
+                    x-kubernetes-preserve-unknown-fields: true
+                  plugin:
+                    default: shellplug
+                    type: string
+                  retries:
+                    default: 0
+                    type: integer
+                  retryDelay:
+                    default: 30
+                    type: integer
+                  target:
+                    type: string
+                  timeout:
+                    default: 36000
+                    type: integer
+                  timezone:
+                    default: Europe/Istanbul
+                    type: string
+                  timing:
+                    x-kubernetes-preserve-unknown-fields: true
+                  title:
+                    type: string
+                  webhook:
+                    default: ""
+                    type: string
+                required:
+                - category
+                - enabled
+                - params
+                - plugin
+                - target
+                - timezone
+                - title
+                type: object
               modified:
                 format: int64
                 type: integer

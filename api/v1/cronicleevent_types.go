@@ -27,7 +27,7 @@ type CronicleEventSpec struct {
 	CatchUp int `json:"catchUp,omitempty"`
 
 	// +kubebuilder:validation:Required
-	Category string `json:"category,omitempty"`
+	Category string `json:"category"`
 
 	CpuLimit   int `json:"cpuLimit,omitempty"`
 	CpuSustain int `json:"cpuSustain,omitempty"`
@@ -35,50 +35,63 @@ type CronicleEventSpec struct {
 
 	// +kubebuilder:default=1
 	// +kubebuilder:validation:Required
-	Enabled int `json:"enabled,omitempty"`
+	Enabled int `json:"enabled"`
 
-	LogMaxSize    int    `json:"logMaxSize,omitempty"`
-	MaxChildren   int    `json:"maxChildren,omitempty"`
-	MemoryLimit   int    `json:"memoryLimit,omitempty"`
-	MemorySustain int    `json:"memorySustain,omitempty"`
-	Multiplex     int    `json:"multiplex,omitempty"`
-	Notes         string `json:"notes,omitempty"`
-	NotifyFail    string `json:"notifyFail,omitempty"`
+	LogMaxSize    int `json:"logMaxSize,omitempty"`
+	MaxChildren   int `json:"maxChildren,omitempty"`
+	MemoryLimit   int `json:"memoryLimit,omitempty"`
+	MemorySustain int `json:"memorySustain,omitempty"`
+	Multiplex     int `json:"multiplex,omitempty"`
+
+	// +kubebuilder:default=""
+	Notes string `json:"notes,omitempty"`
+
+	// +kubebuilder:default=""
+	NotifyFail string `json:"notifyFail,omitempty"`
+
+	// +kubebuilder:default=""
 	NotifySuccess string `json:"notifySuccess,omitempty"`
 
 	// +kubebuilder:validation:Required
-	Params v1.JSON `json:"params,omitempty"`
+	Params v1.JSON `json:"params"`
 
 	// +kubebuilder:validation:Required
 	// +kubebuilder:default="shellplug"
-	Plugin string `json:"plugin,omitempty"`
+	Plugin string `json:"plugin"`
 
-	Retries    int `json:"retries,omitempty"`
+	// +kubebuilder:default=0
+	Retries int `json:"retries,omitempty"`
+
+	// +kubebuilder:default=30
 	RetryDelay int `json:"retryDelay,omitempty"`
 
 	// +kubebuilder:validation:Required
-	Target string `json:"target,omitempty"`
+	Target string `json:"target"`
 
+	// +kubebuilder:default=36000
 	Timeout int `json:"timeout,omitempty"`
 
 	// +kubebuilder:validation:Required
-	Timezone string `json:"timezone,omitempty"`
+	// +kubebuilder:default="Europe/Istanbul"
+	Timezone string `json:"timezone"`
 
 	// +kubebuilder:validation:Required
 	Timing v1.JSON `json:"timing,omitempty"`
 
 	// +kubebuilder:validation:Required
-	Title string `json:"title,omitempty"`
+	Title string `json:"title"`
 
-	Webhook          string                `json:"webhook,omitempty"`
+	// +kubebuilder:default=""
+	WebHook          string                `json:"webhook,omitempty"`
 	InstanceSelector *metav1.LabelSelector `json:"instanceSelector,omitempty"`
 }
 
 // CronicleEventStatus defines the observed state of CronicleEvent
 type CronicleEventStatus struct {
-	EventId     string `json:"eventId,omitempty"`
-	Modified    int64  `json:"modified,omitempty"`
-	EventStatus string `json:"eventStatus,omitempty"`
+	EventId         string            `json:"eventId,omitempty"`
+	Modified        int64             `json:"modified,omitempty"`
+	EventStatus     string            `json:"eventStatus,omitempty"`
+	LastHandledSpec CronicleEventSpec `json:"lastHandledSpec,omitempty"`
 }
 
 // +kubebuilder:object:root=true

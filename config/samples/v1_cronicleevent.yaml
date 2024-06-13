@@ -7,8 +7,9 @@ metadata:
   name: cronicleevent-sample
 spec:
   enabled: 1
-  category: "general"
+  category: "genaral"
   title: "Test go operator"
+  target: "6712b650ec8b"
   params:
     script: "echo 'Hello, World!'"
 
