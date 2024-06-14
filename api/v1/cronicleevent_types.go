@@ -17,7 +17,7 @@ limitations under the License.
 package v1
 
 import (
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"github.com/yasinahlattci/cronicle-operator/pkg/cronicle_client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -53,7 +53,7 @@ type CronicleEventSpec struct {
 	NotifySuccess string `json:"notifySuccess,omitempty"`
 
 	// +kubebuilder:validation:Required
-	Params v1.JSON `json:"params"`
+	Params cronicle_client.CronicleParams `json:"params"`
 
 	// +kubebuilder:validation:Required
 	// +kubebuilder:default="shellplug"
@@ -76,7 +76,7 @@ type CronicleEventSpec struct {
 	Timezone string `json:"timezone"`
 
 	// +kubebuilder:validation:Required
-	Timing v1.JSON `json:"timing,omitempty"`
+	Timing cronicle_client.CronicleTiming `json:"timing,omitempty"`
 
 	// +kubebuilder:validation:Required
 	Title string `json:"title"`

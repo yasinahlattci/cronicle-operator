@@ -122,7 +122,14 @@ spec:
                 default: ""
                 type: string
               params:
-                x-kubernetes-preserve-unknown-fields: true
+                properties:
+                  annotate:
+                    type: string
+                  json:
+                    type: string
+                  script:
+                    type: string
+                type: object
               plugin:
                 default: shellplug
                 type: string
@@ -141,7 +148,32 @@ spec:
                 default: Europe/Istanbul
                 type: string
               timing:
-                x-kubernetes-preserve-unknown-fields: true
+                properties:
+                  days:
+                    items:
+                      type: integer
+                    type: array
+                  hours:
+                    items:
+                      type: integer
+                    type: array
+                  minutes:
+                    items:
+                      type: integer
+                    type: array
+                  months:
+                    items:
+                      type: integer
+                    type: array
+                  weekdays:
+                    items:
+                      type: integer
+                    type: array
+                  years:
+                    items:
+                      type: integer
+                    type: array
+                type: object
               title:
                 type: string
               webhook:
@@ -249,7 +281,14 @@ spec:
                     default: ""
                     type: string
                   params:
-                    x-kubernetes-preserve-unknown-fields: true
+                    properties:
+                      annotate:
+                        type: string
+                      json:
+                        type: string
+                      script:
+                        type: string
+                    type: object
                   plugin:
                     default: shellplug
                     type: string
@@ -268,7 +307,32 @@ spec:
                     default: Europe/Istanbul
                     type: string
                   timing:
-                    x-kubernetes-preserve-unknown-fields: true
+                    properties:
+                      days:
+                        items:
+                          type: integer
+                        type: array
+                      hours:
+                        items:
+                          type: integer
+                        type: array
+                      minutes:
+                        items:
+                          type: integer
+                        type: array
+                      months:
+                        items:
+                          type: integer
+                        type: array
+                      weekdays:
+                        items:
+                          type: integer
+                        type: array
+                      years:
+                        items:
+                          type: integer
+                        type: array
+                    type: object
                   title:
                     type: string
                   webhook:

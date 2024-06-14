@@ -21,7 +21,7 @@ import (
 	"errors"
 	"reflect"
 	//"fmt"
-	cronicleApiClient "github.com/yasinahlattci/cronicle-go-client/api"
+	"github.com/yasinahlattci/cronicle-operator/pkg/cronicle_client"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -106,7 +106,7 @@ func (r *CronicleEventReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, nil
 	}
 
-	cronicleClient := cronicleApiClient.NewClient(cronicleApiClient.Config{
+	cronicleClient := cronicle_client.NewClient(cronicle_client.Config{
 		BaseUrl:       "http://localhost:3012",
 		APIKey:        "b488c195302bae22908c1b89e94b9c14",
 		Timeout:       10 * time.Second,
@@ -169,7 +169,7 @@ func (r *CronicleEventReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	cronicleEvent.Status.Modified = modifiedDate
 
 	if eventStatus == "" && eventId == "" {
-		createEventData := cronicleApiClient.CreateEventRequest{
+		createEventData := cronicle_client.CreateEventRequest{
 			CatchUp:       cronicleEvent.Spec.CatchUp,
 			Category:      cronicleEvent.Spec.Category,
 			CpuLimit:      cronicleEvent.Spec.CpuLimit,
@@ -192,16 +192,8 @@ func (r *CronicleEventReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			Timezone:      cronicleEvent.Spec.Timezone,
 			Title:         cronicleEvent.Spec.Title,
 			WebHook:       cronicleEvent.Spec.WebHook,
-			Timing: map[string]interface{}{
-				"days":    []int{13, 14, 15, 16}, // Monday to Friday
-				"hours":   []int{15, 16, 17, 18},
-				"minutes": []int{22, 24, 26, 28, 30},
-			},
-			Params: map[string]interface{}{
-				"script":   "#!/bin/sh\n\nsleep 60",
-				"annotate": 1,
-				"json":     0,
-			},
+			Timing:        cronicleEvent.Spec.Timing,
+			Params:        cronicleEvent.Spec.Params,
 		}
 		resp, err := cronicleClient.CreateEvent(createEventData)
 		cronicleEvent.Status.EventId = resp.ID
@@ -217,7 +209,7 @@ func (r *CronicleEventReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	if !reflect.DeepEqual(cronicleEvent.Spec, cronicleEvent.Status.LastHandledSpec) {
-		updateEventData := cronicleApiClient.UpdateEventRequest{
+		updateEventData := cronicle_client.UpdateEventRequest{
 			Id:            cronicleEvent.Status.EventId,
 			CatchUp:       cronicleEvent.Spec.CatchUp,
 			Category:      cronicleEvent.Spec.Category,
@@ -241,16 +233,8 @@ func (r *CronicleEventReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			Timezone:      cronicleEvent.Spec.Timezone,
 			Title:         cronicleEvent.Spec.Title,
 			WebHook:       cronicleEvent.Spec.WebHook,
-			Timing: map[string]interface{}{
-				"days":    []int{13, 14, 15, 16}, // Monday to Friday
-				"hours":   []int{15, 16, 17, 18},
-				"minutes": []int{22, 24, 26, 28, 30},
-			},
-			Params: map[string]interface{}{
-				"script":   "#!/bin/sh\n\nsleep 60",
-				"annotate": 1,
-				"json":     0,
-			},
+			Timing:        cronicleEvent.Spec.Timing,
+			Params:        cronicleEvent.Spec.Params,
 		}
 		// It means event is already created, only update can be done, since delete is handled above
 		resp, err := cronicleClient.UpdateEvent(updateEventData)

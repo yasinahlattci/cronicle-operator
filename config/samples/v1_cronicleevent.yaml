@@ -7,9 +7,12 @@ metadata:
   name: cronicleevent-sample
 spec:
   enabled: 1
-  category: "genaral"
+  category: "clxdclws905"
   title: "Test go operator"
   target: "6712b650ec8b"
+  timing:
+    days: [1, 2, 3, 4 ,5]
+    hours: [0, 6, 12, 18]
+    minutes: [5, 10, 15, 20]
   params:
     script: "echo 'Hello, World!'"
-
