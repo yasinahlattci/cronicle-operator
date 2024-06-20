@@ -19,14 +19,14 @@ package controller
 import (
 	"context"
 	"errors"
-	"reflect"
-	//"fmt"
+	"fmt"
 	"github.com/yasinahlattci/cronicle-operator/pkg/cronicle_client"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -106,22 +106,22 @@ func (r *CronicleEventReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, nil
 	}
 
+	labelSelector := cronicleEvent.Spec.InstanceSelector
+
+	service, err := r.getFirstMatchingService(ctx, req.Namespace, labelSelector)
+	if err != nil {
+		l.Error(err, "No instance found for the event")
+		return ctrl.Result{}, err
+	}
+	serviceUrl := fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", service.Name, service.Namespace, service.Spec.Ports[0].Port)
+	l.Info("Service URL", "url", serviceUrl)
+
 	cronicleClient := cronicle_client.NewClient(cronicle_client.Config{
 		BaseUrl:       "http://localhost:3012",
-		APIKey:        "b488c195302bae22908c1b89e94b9c14",
+		APIKey:        "78d570a5a27d7482f4a39314ebf73845",
 		Timeout:       10 * time.Second,
 		RetryAttempts: 2,
 	})
-
-	//labelSelector := cronicleEvent.Spec.InstanceSelector
-
-	//service, err := r.getFirstMatchingService(ctx, req.Namespace, labelSelector)
-	//if err != nil {
-	//	l.Error(err, "No instance found for the event")
-	//	return ctrl.Result{}, err
-	//}
-	//serviceUrl := fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", service.Spec.ClusterIP, service.Namespace, service.Spec.Ports[0].Port)
-	//l.Info("Service URL", "serviceUrl", serviceUrl)
 
 	// Check if the event is being deleted
 	if cronicleEvent.GetDeletionTimestamp() != nil {
@@ -135,11 +135,14 @@ func (r *CronicleEventReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 				l.Info("Event has running jobs, queueing for deletion", "eventId", cronicleEvent.Status.EventId)
 				return ctrl.Result{RequeueAfter: 60 * time.Second}, nil
 			}
-			cronicleClient.DeleteEvent(cronicleEvent.Status.EventId)
 
-			//if err != nil {
-			//	l.Info(err, "Failed to delete event")
-			//}
+			err = cronicleClient.DeleteEvent(cronicleEvent.Status.EventId)
+
+			if err != nil {
+				l.Info("Failed to delete event", "eventId", cronicleEvent.Status.EventId)
+				l.Info("Error", "err", err)
+			}
+			l.Info("Event deleted", "eventId", cronicleEvent.Status.EventId)
 			cronicleEvent.Status.EventStatus = "readyForDeletion"
 			controllerutil.RemoveFinalizer(cronicleEvent, "cronicle.net/eventfinalizer")
 			err = r.Update(ctx, cronicleEvent)
@@ -150,12 +153,12 @@ func (r *CronicleEventReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 		}
 		if cronicleEvent.Status.EventStatus == "created" {
-			resp, err := cronicleClient.DisableEvent(cronicleEvent.Status.EventId)
+			err := cronicleClient.DisableEvent(cronicleEvent.Status.EventId)
 			if err != nil {
 				l.Error(err, "Failed to disable event")
 				return ctrl.Result{}, err
 			}
-			l.Info("Event disabled", "resp", resp)
+			l.Info("Event disabled", "resp", cronicleEvent.Status.EventId)
 			cronicleEvent.Status.EventStatus = "markedForDeletion"
 			err = r.Status().Update(ctx, cronicleEvent)
 			return ctrl.Result{}, nil
@@ -195,14 +198,14 @@ func (r *CronicleEventReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			Timing:        cronicleEvent.Spec.Timing,
 			Params:        cronicleEvent.Spec.Params,
 		}
-		resp, err := cronicleClient.CreateEvent(createEventData)
-		cronicleEvent.Status.EventId = resp.ID
+		eventID, err := cronicleClient.CreateEvent(createEventData)
+		cronicleEvent.Status.EventId = eventID
 		cronicleEvent.Status.EventStatus = "created"
 		if err != nil {
 			l.Error(err, "Failed to create event")
 			return ctrl.Result{}, err
 		}
-		l.Info("Event created", "resp", resp)
+		l.Info("Event created", "resp", eventID)
 		cronicleEvent.Status.LastHandledSpec = cronicleEvent.Spec
 		r.Status().Update(ctx, cronicleEvent)
 		return ctrl.Result{}, nil
@@ -237,12 +240,12 @@ func (r *CronicleEventReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			Params:        cronicleEvent.Spec.Params,
 		}
 		// It means event is already created, only update can be done, since delete is handled above
-		resp, err := cronicleClient.UpdateEvent(updateEventData)
+		err := cronicleClient.UpdateEvent(updateEventData)
 		if err != nil {
 			l.Error(err, "Failed to update event")
 			return ctrl.Result{}, err
 		}
-		l.Info("Event updated", "resp", resp)
+		l.Info("Event updated", "resp", cronicleEvent.Status.EventId)
 		cronicleEvent.Status.LastHandledSpec = cronicleEvent.Spec
 		r.Status().Update(ctx, cronicleEvent)
 		return ctrl.Result{}, nil

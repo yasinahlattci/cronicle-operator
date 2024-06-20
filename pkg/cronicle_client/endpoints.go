@@ -15,12 +15,14 @@ const (
 )
 
 type CreateEventResponse struct {
-	ID   string `json:"id"`
-	Code int    `json:"code"`
+	ID          string `json:"id"`
+	Code        int    `json:"code"`
+	Description string `json:"description,omitempty"`
 }
 
 type StandardResponse struct {
-	Code int `json:"code"`
+	Code        int    `json:"code"`
+	Description string `json:"description,omitempty"`
 }
 
 type Job struct {
@@ -104,35 +106,38 @@ type UpdateEventRequest struct {
 }
 
 // CreateEvent is a method that sends a request to the CreateEventEndpoint
-func (c *Client) CreateEvent(request CreateEventRequest) (*CreateEventResponse, error) {
+func (c *Client) CreateEvent(request CreateEventRequest) (string, error) {
 	url := fmt.Sprintf("%s%s", c.config.BaseUrl, CreateEventEndpoint)
 
 	jsonData, err := json.Marshal(request)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Api-Key", c.config.APIKey)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected response code: %d", resp.StatusCode)
+		return "", fmt.Errorf("unexpected response code: %d", resp.StatusCode)
 	}
 	var response CreateEventResponse
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return nil, err
+		return "", err
 	}
-	return &response, nil
+	if response.Code != 0 {
+		return "", fmt.Errorf("Error when creating event: %s", response.Description)
+	}
+	return response.ID, nil
 }
 
 func (c *Client) CheckRunningJobs(eventID string) (bool, error) {
@@ -167,95 +172,107 @@ func (c *Client) CheckRunningJobs(eventID string) (bool, error) {
 	return false, nil
 }
 
-func (c *Client) DeleteEvent(eventID string) (*StandardResponse, error) {
+func (c *Client) DeleteEvent(eventID string) error {
 	url := fmt.Sprintf("%s%s", c.config.BaseUrl, DeleteEventEndpoint)
 
 	jsonData, err := json.Marshal(map[string]string{"id": eventID})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
-		return nil, err
+		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Api-Key", c.config.APIKey)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected response code: %d", resp.StatusCode)
+		return fmt.Errorf("unexpected response code when deleting event: %d", resp.StatusCode)
 	}
 	var response StandardResponse
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return nil, err
+		return err
 	}
-	return &response, nil
+
+	if response.Code != 0 {
+		return fmt.Errorf("Error when deleting event: %s", response.Description)
+	}
+	return nil
 }
 
-func (c *Client) DisableEvent(eventID string) (*StandardResponse, error) {
+func (c *Client) DisableEvent(eventID string) error {
 	url := fmt.Sprintf("%s%s", c.config.BaseUrl, UpdateEventEndpoint)
 
 	jsonData, err := json.Marshal(map[string]interface{}{"id": eventID, "enabled": 0})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
-		return nil, err
+		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Api-Key", c.config.APIKey)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected response code: %d", resp.StatusCode)
+		return fmt.Errorf("unexpected response code: %d", resp.StatusCode)
 	}
 	var response StandardResponse
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return nil, err
+		return err
 	}
-	return &response, nil
+
+	if response.Code != 0 {
+		return fmt.Errorf("Error when disabling event: %s", response.Description)
+	}
+	return nil
 }
 
-func (c *Client) UpdateEvent(request UpdateEventRequest) (*StandardResponse, error) {
+func (c *Client) UpdateEvent(request UpdateEventRequest) error {
 	url := fmt.Sprintf("%s%s", c.config.BaseUrl, UpdateEventEndpoint)
 
 	jsonData, err := json.Marshal(request)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
-		return nil, err
+		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Api-Key", c.config.APIKey)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected response code: %d", resp.StatusCode)
+		return fmt.Errorf("unexpected response code: %d", resp.StatusCode)
 	}
 	var response StandardResponse
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return nil, err
+		return err
 	}
-	return &response, nil
+
+	if response.Code != 0 {
+		return fmt.Errorf("Error when updating event: %s", response.Description)
+	}
+	return nil
 }
