@@ -39,6 +39,8 @@ spec:
           spec:
             description: CronicleEventSpec defines the desired state of CronicleEvent
             properties:
+              algorithm:
+                type: string
               catchUp:
                 default: 0
                 type: integer
@@ -124,9 +126,9 @@ spec:
               params:
                 properties:
                   annotate:
-                    type: string
+                    type: integer
                   json:
-                    type: string
+                    type: integer
                   script:
                     type: string
                 type: object
@@ -198,6 +200,8 @@ spec:
               lastHandledSpec:
                 description: CronicleEventSpec defines the desired state of CronicleEvent
                 properties:
+                  algorithm:
+                    type: string
                   catchUp:
                     default: 0
                     type: integer
@@ -283,9 +287,9 @@ spec:
                   params:
                     properties:
                       annotate:
-                        type: string
+                        type: integer
                       json:
-                        type: string
+                        type: integer
                       script:
                         type: string
                     type: object

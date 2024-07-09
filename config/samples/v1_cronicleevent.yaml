@@ -6,16 +6,22 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
   name: cronicleevent-sample
 spec:
-  enabled: 1
+  enabled: 0
+  catchUp: 1
+  notes: "Created by operator"
+  plugin: "shellplug"
   category: "general"
-  title: "Cronicle Operator"
-  target: "glxn8vg3i0m"
+  title: "Product Import"
+  target: "gly2y8x3r02"
+  detached: 1
   timing:
-    days: [1, 2, 3, 4 ,5]
-    hours: [0, 6, 12, 18]
-    minutes: [5, 10, 15, 20]
+    minutes: [0,5,10,15,20,25,30,35,40,45,50,55]
   params:
-    script: "sleep 100"
+    script: |
+      #!/bin/bash
+      echo "Hello World"
+    annotate: 1
+    json: 1
   instanceSelector:
     matchLabels:
-      app.kubernetes.io/instance: release-name
+      app.kubernetes.io/instance: cronicle-master

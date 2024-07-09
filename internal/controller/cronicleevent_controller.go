@@ -26,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"os"
 	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -114,11 +115,10 @@ func (r *CronicleEventReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, err
 	}
 	serviceUrl := fmt.Sprintf("http://%s.%s.svc.cluster.local:%d", service.Name, service.Namespace, service.Spec.Ports[0].Port)
-	l.Info("Service URL", "url", serviceUrl)
 
 	cronicleClient := cronicle_client.NewClient(cronicle_client.Config{
-		BaseUrl:       "http://localhost:3012",
-		APIKey:        "78d570a5a27d7482f4a39314ebf73845",
+		BaseUrl:       serviceUrl,
+		APIKey:        os.Getenv("CRONICLE_API_KEY"),
 		Timeout:       10 * time.Second,
 		RetryAttempts: 2,
 	})
@@ -197,6 +197,7 @@ func (r *CronicleEventReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			WebHook:       cronicleEvent.Spec.WebHook,
 			Timing:        cronicleEvent.Spec.Timing,
 			Params:        cronicleEvent.Spec.Params,
+			Algorithm:     cronicleEvent.Spec.Algorithm,
 		}
 		eventID, err := cronicleClient.CreateEvent(createEventData)
 		cronicleEvent.Status.EventId = eventID
@@ -238,6 +239,7 @@ func (r *CronicleEventReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			WebHook:       cronicleEvent.Spec.WebHook,
 			Timing:        cronicleEvent.Spec.Timing,
 			Params:        cronicleEvent.Spec.Params,
+			Algorithm:     cronicleEvent.Spec.Algorithm,
 		}
 		// It means event is already created, only update can be done, since delete is handled above
 		err := cronicleClient.UpdateEvent(updateEventData)

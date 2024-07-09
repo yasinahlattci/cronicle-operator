@@ -79,7 +79,8 @@ type CronicleEventSpec struct {
 	Timing cronicle_client.CronicleTiming `json:"timing,omitempty"`
 
 	// +kubebuilder:validation:Required
-	Title string `json:"title"`
+	Title     string `json:"title"`
+	Algorithm string `json:"algorithm,omitempty"`
 
 	// +kubebuilder:default=""
 	WebHook          string                `json:"webhook,omitempty"`

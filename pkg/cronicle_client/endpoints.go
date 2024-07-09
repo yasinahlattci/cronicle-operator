@@ -46,8 +46,8 @@ type CronicleTiming struct {
 // +k8s:deepcopy-gen=true
 type CronicleParams struct {
 	Script   string `json:"script,omitempty"`
-	Annotate string `json:"annotate,omitempty"`
-	Json     string `json:"json,omitempty"`
+	Annotate int    `json:"annotate,omitempty"`
+	Json     int    `json:"json,omitempty"`
 }
 
 type CreateEventRequest struct {
@@ -75,6 +75,7 @@ type CreateEventRequest struct {
 	Timing        CronicleTiming `json:"timing"`
 	Title         string         `json:"title"`
 	WebHook       string         `json:"web_hook"`
+	Algorithm     string         `json:"algorithm"`
 }
 
 type UpdateEventRequest struct {
@@ -103,6 +104,7 @@ type UpdateEventRequest struct {
 	Timing        CronicleTiming `json:"timing"`
 	Title         string         `json:"title"`
 	WebHook       string         `json:"web_hook"`
+	Algorithm     string         `json:"algorithm"`
 }
 
 // CreateEvent is a method that sends a request to the CreateEventEndpoint
